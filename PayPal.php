@@ -5,6 +5,7 @@ class PayPal
 {
     private $curl;
     private $debug=false;
+    private $errorMessages = [];
 
     const VERIFY_URI = 'https://ipnpb.paypal.com/cgi-bin/webscr';
     const PAYPAL_URI = 'https://www.paypal.com/cgi-bin/webscr';
@@ -49,6 +50,12 @@ class PayPal
     /** PayPal order item name */
     public $itemName = false;
 
+    /** PayPal ipn payment status */
+    public $paymentStatus = null;
+
+    /** PayPal ipn payment transaction id */
+    public $txnId = null;
+
     public function __construct(Array $params=[])
     {
         $this->curl = curl_init();
@@ -62,14 +69,18 @@ class PayPal
         }
 
         if(!$this->businessAccount) {
-            $this->showException('PayPal business account is missing or invalid.');
+            $this->showException('PayPal business account is missing.');
+        }
+
+        if(!filter_var($this->businessAccount,FILTER_VALIDATE_EMAIL)) {
+            $this->showException('PayPal business account is invalid.');
         }
     }
 
     /**
      * PayPal mode to live
      */
-    public function liveMode()
+    public function activateLiveMode()
     {
         $this->isLive = true;
     }
@@ -77,7 +88,7 @@ class PayPal
     /**
      * PayPal mode to sandbox
      */
-    public function sandboxMode()
+    public function activateSandboxMode()
     {
         $this->isLive = false;
     }
@@ -93,6 +104,14 @@ class PayPal
     private function showException($message)
     {
         throw new \Exception($message,500);
+    }
+
+    private function addErrorMessage($key,$message)
+    {
+        if($this->debug)
+        {
+            $this->errorMessages[$key][] = $message;
+        }
     }
 
     public function getCallingScriptUri()
@@ -187,7 +206,7 @@ class PayPal
             function submitForm() {
                 document.getElementById('my_paypal_form').submit();
             }
-            //window.onload = submitForm;
+            window.onload = submitForm;
         </script>
         <?php
     }
@@ -257,7 +276,11 @@ class PayPal
         return $result;
     }
 
-    public function verifyPayment()
+    /**
+     * @return array|bool|string
+     * @throws \Exception
+     */
+    private function verifyIpnResponse()
     {
         $payPalIpnResponseContent = "";
         if (count($_POST)<=0) {
@@ -313,23 +336,73 @@ class PayPal
                 'Connection: Close',
             ),
         ]);
-
         if(is_array($response) && $response['status']=="success") {
             if ($response['response'] == self::VALID)
             {
-                return $this->parseIpnResponse($payPalIpnResponseContent);
+                return $payPalIpnResponseContent;
             }
             else
             {
-                $this->showException('Invalid IPN received.');
+                $this->addErrorMessage('Verify IPN','Invalid IPN received.');
             }
         }
         else
         {
-            $this->showException($response['response']);
+            $this->addErrorMessage('Verify IPN',$response['response']);
         }
+        return false;
     }
 
+    /**
+     * @return bool
+     */
+    public function verifyPayment()
+    {
+        $ipnResponse=$this->verifyIpnResponse();
+        if($ipnResponse) {
+            $parseIpn=$this->parseIpnResponse($ipnResponse);
+            if(array_key_exists('paymentStatus',$parseIpn) && $parseIpn['paymentStatus']!='')
+            {
+                if($parseIpn['paymentStatus']=="Completed")
+                {
+                    if($this->isLive)
+                    {
+                        if($parseIpn['testingIpn'])
+                        {
+                            $this->addErrorMessage('Parsing IPN','PayPal testing ipn received on live mode.');
+                            return false;
+                        }
+                    }
+                    if(count($parseIpn)>0) {
+                        foreach ($parseIpn as $index=>$value) {
+                            if(property_exists($this,$index)) {
+                                $this->{$index}=$value;
+                            }
+                        }
+                    }
+                    return true;
+                }
+                else
+                {
+                    $this->addErrorMessage('Parsing IPN','PayPal payment status is '.strtolower($parseIpn['paymentStatus']).'.');
+                }
+            }
+            else
+            {
+                $this->addErrorMessage('Parsing IPN','PayPal ipn not parsed properly.');
+            }
+        }
+        else
+        {
+            $this->addErrorMessage('Verify Payment','PayPal ipn not verified.');
+        }
+        return false;
+    }
+
+    /**
+     * @param $ipnResponse
+     * @return array
+     */
     private function parseIpnResponse($ipnResponse)
     {
         $ipn_data=array(
@@ -338,19 +411,26 @@ class PayPal
             'customData'=>'',
             'amount'=>'',
             'currency'=>'',
+            'txnId'=>'',
+            'testing_ipn'=>false,
         );
 
         $businessEmail = $this->businessAccount;
+
         $ipnBusinessEmail = "";
+
         if(array_key_exists('business', $ipnResponse))
         {
             $ipnBusinessEmail = $ipnResponse['business'];
         }
+
         if(array_key_exists('receiver_email', $ipnResponse))
         {
             $ipnBusinessEmail = $ipnResponse['receiver_email'];
         }
+
         $ipn_data['businessAccount']=trim($businessEmail);
+
         if(array_key_exists('payment_status', $ipnResponse))
         {
             if ($ipnResponse['payment_status'] != null)
@@ -358,6 +438,7 @@ class PayPal
                 $ipn_data['paymentStatus']=trim($ipnResponse['payment_status']);
             }
         }
+
         if(array_key_exists('custom', $ipnResponse))
         {
             if ($ipnResponse['custom'] != null)
@@ -365,6 +446,7 @@ class PayPal
                 $ipn_data['custom']=trim($ipnResponse['custom']);
             }
         }
+
         if(array_key_exists('mc_gross', $ipnResponse))
         {
             if ($ipnResponse['mc_gross'] != null)
@@ -372,6 +454,30 @@ class PayPal
                 $ipn_data['amount']=trim($ipnResponse['mc_gross']);
             }
         }
-        return json_decode(json_encode($ipn_data));
+
+        if(array_key_exists('mc_currency', $ipnResponse))
+        {
+            if ($ipnResponse['mc_currency'] != null)
+            {
+                $ipn_data['currency']=trim($ipnResponse['mc_currency']);
+            }
+        }
+
+        if(array_key_exists('test_ipn', $ipnResponse))
+        {
+            if($ipnResponse['test_ipn'])
+            {
+                $ipn_data['testing_ipn']=true;
+            }
+        }
+
+        if(array_key_exists('txn_id', $ipnResponse))
+        {
+            if($ipnResponse['txn_id'])
+            {
+                $ipn_data['txnId']=$ipnResponse['txn_id'];
+            }
+        }
+        return $ipn_data;
     }
 }
