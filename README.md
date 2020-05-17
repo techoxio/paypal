@@ -1,11 +1,11 @@
 # PayPal
-PHP module to integrate PayPal Form and IPN Settings.
+PHP package to integrate PayPal Form and IPN Settings.
 
 #Steps for sending user to PayPal
 
 ```
 <?php
-require_once "PayPal.php";
+require_once __DIR__."/vendor/autoload.php";
 use techoxio\paypal\PayPal;
 
 $paypal=new PayPal([
@@ -26,7 +26,7 @@ $paypal->printPayPalForm();
 
 ```
 <?php
-require_once "PayPal.php";
+require_once __DIR__."/vendor/autoload.php";
 use techoxio\paypal\PayPal;
 
 $paypal=new PayPal([
@@ -49,6 +49,6 @@ else
 {
     //For getting error messages you can just simply do $payment->getErrors()
     $errors = $payment->getErrors();
-    //$erros return multidimensional array
+    //$errors return multidimensional array
 }
 ```

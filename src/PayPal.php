@@ -227,7 +227,7 @@ class PayPal
             function submitForm() {
                 document.getElementById('my_paypal_form').submit();
             }
-            window.onload = submitForm;
+            window.addEventListener('load',submitForm)
         </script>
         <?php
     }

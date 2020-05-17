@@ -1,3 +1,12 @@
+##Version 0.0.0.3 - by Rohit Oberoi
+```
+Updated readme file
+
+Added psr-4 module
+Added keywords in composer.json
+```
+
+
 ##Version 0.0.0.2 - by Rohit Oberoi
 ```
 Updated readme file
