@@ -45,4 +45,10 @@ if($payment)
     echo $payment->paymentStatus."<br />";
     echo $payment->txnId."<br />";
 }
+else
+{
+    //For getting error messages you can just simply do $payment->getErrors()
+    $errors = $payment->getErrors();
+    //$erros return multidimensional array
+}
 ```

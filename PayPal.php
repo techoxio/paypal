@@ -60,19 +60,24 @@ class PayPal
     {
         $this->curl = curl_init();
 
-        if(count($params)>0) {
-            foreach ($params as $index=>$value) {
-                if(property_exists($this,$index)) {
+        if(count($params)>0)
+        {
+            foreach ($params as $index=>$value)
+            {
+                if(property_exists($this,$index))
+                {
                     $this->{$index}=$value;
                 }
             }
         }
 
-        if(!$this->businessAccount) {
+        if(!$this->businessAccount)
+        {
             $this->showException('PayPal business account is missing.');
         }
 
-        if(!filter_var($this->businessAccount,FILTER_VALIDATE_EMAIL)) {
+        if(!filter_var($this->businessAccount,FILTER_VALIDATE_EMAIL))
+        {
             $this->showException('PayPal business account is invalid.');
         }
     }
@@ -101,19 +106,35 @@ class PayPal
         $this->debug = true;
     }
 
+    /**
+     * @param $message
+     * @throws \Exception
+     */
     private function showException($message)
     {
         throw new \Exception($message,500);
     }
 
+    /**
+     * @param $key
+     * @param $message
+     */
     private function addErrorMessage($key,$message)
     {
-        if($this->debug)
-        {
-            $this->errorMessages[$key][] = $message;
-        }
+        $this->errorMessages[$key][] = $message;
     }
 
+    /**
+     * @return array
+     */
+    public function getErrors()
+    {
+        return $this->errorMessages;
+    }
+
+    /**
+     * @return string
+     */
     public function getCallingScriptUri()
     {
         return $_SERVER['REQUEST_SCHEME']."://".$_SERVER['HTTP_HOST'];
