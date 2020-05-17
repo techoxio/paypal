@@ -1,0 +1,23 @@
+{
+  "name": "techoxio/paypal",
+  "type": "library",
+  "description": "PHP module to integrate Paypal Form and IPN Settings.",
+  "keywords": ["paypal", "paypal setup"],
+  "homepage": "https://teamoxio.com/",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Rohit Oberoi",
+      "email": "techoxio@teamoxio.com",
+      "homepage": "https://teamoxio.com/",
+      "role": "Developer"
+    }
+  ],
+  "minimum-stability": "stable",
+  "autoload": {
+    "psr-4": {"techoxio\\paypal\\": "src/"}
+  },
+  "require": {
+    "php": ">=5.3"
+  }
+}
