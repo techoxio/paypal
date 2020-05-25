@@ -56,6 +56,9 @@ class PayPal
     /** PayPal ipn payment transaction id */
     public $txnId = null;
 
+    /** PayPal auto submit form */
+    public $autoSubmitForm = false;
+
     public function __construct(Array $params=[])
     {
         $this->curl = curl_init();
@@ -222,13 +225,30 @@ class PayPal
             ?>
             <input type="hidden" name="cancel_return" value="<?= $this->cancelUrl ?>" />
             <input type="hidden" name="return" value="<?= $this->returnUrl ?>" />
-        </form>
-        <script type="text/javascript">
-            function submitForm() {
-                document.getElementById('my_paypal_form').submit();
+            <?php
+            if(!$this->autoSubmitForm)
+            {
+                ?>
+                <button type="submit">
+                    <img src="PayPal_Logo.png" alt="PayPal">
+                </button>
+                <?php
             }
-            window.addEventListener('load',submitForm)
-        </script>
+            ?>
+        </form>
+        <?php
+        if($this->autoSubmitForm)
+        {
+            ?>
+            <script type="text/javascript">
+                function submitForm() {
+                    document.getElementById('my_paypal_form').submit();
+                }
+                window.addEventListener('load',submitForm)
+            </script>
+            <?php
+        }
+        ?>
         <?php
     }
 
