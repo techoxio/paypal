@@ -14,9 +14,9 @@ $paypal=new PayPal([
     'notifyUrl'=>'', //Merchant website URL, where you receive paypal ipn 
     'cancelUrl' => '', //Merchant website URL, where user will return in case of rejecting order payment
     'returnUrl' => '', //Merchant website URL, where user will return after payment
-    'autoSubmitForm' => true, //Auto submit PayPal form. Default value is false.
 ]);
 
+//$paypal->autoSubmitPaymentForm(); //Auto submit PayPal form. Default value is false.
 //$paypal->activateSandboxMode(); //For activating sandbox mode
 
 //This will automatically redirect user to PayPal.   

@@ -23,7 +23,7 @@ class PayPal
     /** PayPal certificate */
     public $paypalCertificate = __DIR__ . "/cacert.pem";
 
-    /** PayPal model */
+    /** PayPal mode */
     private $isLive = true;
 
     /** PayPal business account */
@@ -99,6 +99,14 @@ class PayPal
     public function activateSandboxMode()
     {
         $this->isLive = false;
+    }
+
+    /**
+     * PayPal auto submit payment form
+     */
+    public function autoSubmitPaymentForm()
+    {
+        $this->autoSubmitForm = true;
     }
 
     /**
